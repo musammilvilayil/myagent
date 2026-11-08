@@ -1,43 +1,33 @@
 # MyAgent roadmap
 
-## Phase 1 — Foundation
-- [x] FastAPI local service
-- [x] Browser dashboard shell
-- [x] Typed tool registry and risk levels
-- [x] Safe starter desktop tools
-- [x] Approval-token primitive
-- [ ] Run CI and validate on Windows
+## Delivered foundation
+- [x] FastAPI local service and browser dashboard
+- [x] OpenAI-compatible bounded tool-calling loop
+- [x] JSON-schema validation for tool arguments
+- [x] System health and process listing
+- [x] Safe diagnostic command allowlist (no arbitrary shell)
+- [x] Workspace file listing, reading and text search
+- [x] Workspace file writes with backup and explicit approval handoff
+- [x] Approval and denial endpoints surfaced in dashboard
+- [x] GitHub Actions CI
 
-## Phase 2 — Real agent loop
-- [ ] Provider abstraction (Gemini, OpenAI-compatible APIs, Ollama)
-- [ ] Tool-call planning and schema validation
-- [ ] Conversation/session persistence
-- [ ] Streaming progress and cancellation
-- [ ] Retry policy and truthful outcome reporting
+## Next implementation phases
+- [ ] Restore/undo file versions and file deletion to recoverable trash
+- [ ] Screen capture and OCR with explicit user consent
+- [ ] Mouse/keyboard automation with per-action preview and kill switch
+- [ ] Browser automation (navigate, inspect, click, fill) with untrusted-page isolation
+- [ ] Full terminal sessions inside a disposable, workspace-scoped sandbox
+- [ ] Application discovery and process termination with approval
+- [ ] Provider adapters for Gemini, Ollama and local OpenAI-compatible models
+- [ ] Persistent sessions, streaming and cancellation
+- [ ] Voice input/output and optional wake word
+- [ ] Multi-agent task delegation and long-term memory
+- [ ] Secure device pairing before any phone/remote control
 
-## Phase 3 — PC awareness and automation
-- [ ] Screen capture with explicit user consent
-- [ ] OCR and active-window awareness
-- [ ] Mouse/keyboard automation with visible action previews
-- [ ] Application discovery and per-app permissions
-- [ ] Browser automation using Playwright
-
-## Phase 4 — Files and developer workflows
-- [ ] Workspace-scoped file search/read/write
-- [ ] Diff preview, backups and undo
-- [ ] Terminal tool with command allowlists and approval
-- [ ] Git/GitHub workflows
-- [ ] Project-aware coding agent with test/fix loops
-
-## Phase 5 — Voice and multi-agent
-- [ ] Push-to-talk and speech-to-text
-- [ ] Text-to-speech and wake word (opt-in)
-- [ ] Specialist agents and task delegation
-- [ ] Long-term memory and searchable history
-- [ ] Phone companion dashboard with secure pairing
-
-## Release gates
-- Automated tests for every tool and permission path
-- Windows 10/11 smoke tests
-- Security review before any remote-control feature
-- No claims of success without verified tool outcomes
+## Safety gates
+- Localhost-only until authentication, TLS, CSRF protection and device permissions are implemented
+- No unrestricted shell, arbitrary Python execution or model-created executable code
+- File operations stay within the configured workspace and reject path traversal
+- Sensitive actions require explicit user approval
+- Every operation reports verified, failed or unverified outcomes honestly
+- Windows 10/11 smoke tests required before release
