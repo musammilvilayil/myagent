@@ -10,7 +10,7 @@ from app.tools.registry import ToolRegistry
 registry = ToolRegistry()
 register_desktop_tools(registry)
 runtime = AgentRuntime(registry)
-app = FastAPI(title=settings.app_name, version="0.1.0")
+app = FastAPI(title=settings.app_name, version="0.2.0")
 
 
 class ToolRequest(BaseModel):
@@ -25,7 +25,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "app": settings.app_name, "version": "0.1.0"}
+    return {"ok": True, "app": settings.app_name, "version": "0.2.0"}
 
 
 @app.get("/api/tools")
@@ -43,10 +43,10 @@ async def execute_tool(request: ToolRequest):
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest):
-    result = await runtime.ask_model([{"role": "user", "content": request.message}])
-    if not result.get("configured"):
-        return {"status": "not_configured", "reply": "Model provider is not configured yet. Test available PC tools from the Tools panel."}
-    return {"status": "completed", "reply": result.get("content", "")}
+    try:
+        return await runtime.chat(request.message)
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Model provider request failed: {exc}")
 
 
 @app.get("/")
