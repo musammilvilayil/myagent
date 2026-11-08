@@ -1,11 +1,13 @@
 from __future__ import annotations
 import httpx
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from app.agent.runtime import AgentRuntime
 from app.config import settings
+from app.tools.browser import register_browser_tools
 from app.tools.desktop import register_desktop_tools
+from app.tools.desktop_automation import register_desktop_automation_tools, _pyautogui
 from app.tools.registry import ToolRegistry
 from app.tools.system import register_system_tools
 from app.tools.workspace import register_workspace_tools
@@ -14,8 +16,10 @@ registry = ToolRegistry()
 register_desktop_tools(registry)
 register_system_tools(registry)
 register_workspace_tools(registry)
+register_desktop_automation_tools(registry)
+register_browser_tools(registry)
 runtime = AgentRuntime(registry)
-app = FastAPI(title=settings.app_name, version="0.3.0")
+app = FastAPI(title=settings.app_name, version="0.4.0")
 
 
 class ToolRequest(BaseModel):
@@ -30,12 +34,25 @@ class ChatRequest(BaseModel):
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "app": settings.app_name, "version": "0.3.0"}
+    return {"ok": True, "app": settings.app_name, "version": "0.4.0"}
 
 
 @app.get("/api/tools")
 async def list_tools():
     return {"tools": registry.describe()}
+
+
+@app.get("/api/screen")
+async def capture_screen():
+    try:
+        image = _pyautogui().screenshot()
+        from io import BytesIO
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        return Response(content=buffer.getvalue(), media_type="image/png",
+                        headers={"Cache-Control": "no-store"})
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
 
 
 @app.post("/api/tools/execute")
