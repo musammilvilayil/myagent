@@ -20,7 +20,7 @@ The initial foundation provides:
 
 ## Setup (PowerShell)
 ```powershell
-git clone https://github.com/musammilvilayil/myagent.git
+git clone -b feature/desktop-agent-foundation https://github.com/musammilvilayil/myagent.git
 cd myagent
 py -3.11 -m venv .venv
 .venv\Scripts\Activate.ps1
