@@ -1,6 +1,7 @@
 from __future__ import annotations
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
+from starlette.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from app.agent.runtime import AgentRuntime
@@ -82,6 +83,26 @@ async def deny_action(token: str):
     if result.get("status") == "failed":
         raise HTTPException(status_code=404, detail=result.get("error", "Approval not found"))
     return result
+
+
+@app.post("/api/voice/transcribe")
+async def voice_transcribe(file: UploadFile = File(...)):
+    audio = await file.read(25 * 1024 * 1024 + 1)
+    if len(audio) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Audio upload exceeds the 25 MB limit.")
+    try:
+        from app.agent.voice import transcribe_audio
+        transcript = await run_in_threadpool(transcribe_audio, audio)
+        if not transcript.get("ok"):
+            return {"status": "no_speech", "transcription": transcript}
+        agent_result = await runtime.chat(transcript["text"])
+        return {"status": agent_result.get("status"), "transcription": transcript,
+                "reply": agent_result.get("reply", ""),
+                "pending_action": agent_result.get("pending_action")}
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Model provider request failed: {exc}")
 
 
 @app.post("/api/chat")
