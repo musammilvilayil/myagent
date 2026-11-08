@@ -10,6 +10,7 @@ class ToolSpec:
     description: str
     risk: RiskLevel
     handler: Callable[..., dict[str, Any]]
+    parameters: dict[str, Any]
 
 
 class ToolRegistry:
@@ -28,6 +29,11 @@ class ToolRegistry:
 
     def describe(self) -> list[dict[str, str]]:
         return [{"name": t.name, "description": t.description, "risk": t.risk.value} for t in self._tools.values()]
+
+    def model_schemas(self) -> list[dict[str, Any]]:
+        return [{"type": "function", "function": {
+            "name": t.name, "description": t.description, "parameters": t.parameters
+        }} for t in self._tools.values()]
 
     def execute(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         tool = self.get(name)
