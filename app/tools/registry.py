@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
+from jsonschema import validate
 from app.security import RiskLevel
 
 
@@ -31,10 +32,10 @@ class ToolRegistry:
         return [{"name": t.name, "description": t.description, "risk": t.risk.value} for t in self._tools.values()]
 
     def model_schemas(self) -> list[dict[str, Any]]:
-        return [{"type": "function", "function": {
-            "name": t.name, "description": t.description, "parameters": t.parameters
-        }} for t in self._tools.values()]
+        return [{"type": "function", "function": {"name": t.name, "description": t.description, "parameters": t.parameters}}
+                for t in self._tools.values()]
 
     def execute(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         tool = self.get(name)
+        validate(instance=arguments, schema=tool.parameters)
         return tool.handler(**arguments)
