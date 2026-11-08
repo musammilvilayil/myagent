@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+import base64
 from typing import Any
 
 from app.security import RiskLevel
@@ -20,10 +21,13 @@ def _pyautogui():
 def screen_capture() -> dict[str, Any]:
     gui = _pyautogui()
     image = gui.screenshot()
+    original_width, original_height = image.size
+    image.thumbnail((1600, 1200))
     buffer = BytesIO()
-    image.save(buffer, format="PNG")
-    return {"ok": True, "width": image.width, "height": image.height,
-            "image_base64": __import__("base64").b64encode(buffer.getvalue()).decode("ascii")}
+    image.save(buffer, format="PNG", optimize=True)
+    return {"ok": True, "width": original_width, "height": original_height,
+            "image_base64": base64.b64encode(buffer.getvalue()).decode("ascii"),
+            "note": "Image is resized to fit within 1600x1200 for model vision."}
 
 
 def mouse_click(x: int, y: int, button: str = "left", clicks: int = 1) -> dict[str, Any]:
