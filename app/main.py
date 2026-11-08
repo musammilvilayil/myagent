@@ -1,4 +1,5 @@
 from __future__ import annotations
+from contextlib import asynccontextmanager
 import httpx
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from starlette.concurrency import run_in_threadpool
@@ -20,7 +21,15 @@ register_workspace_tools(registry)
 register_desktop_automation_tools(registry)
 register_browser_tools(registry)
 runtime = AgentRuntime(registry)
-app = FastAPI(title=settings.app_name, version="0.4.0")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    close_browser_session()
+
+
+app = FastAPI(title=settings.app_name, version="0.4.0", lifespan=lifespan)
 
 
 class ToolRequest(BaseModel):
@@ -31,11 +40,6 @@ class ToolRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=12000)
-
-
-@app.on_event("shutdown")
-def shutdown_browser():
-    close_browser_session()
 
 
 @app.get("/api/health")
