@@ -48,7 +48,7 @@ def terminate_process(pid: int) -> dict[str, Any]:
             owner = process.username()
         except psutil.AccessDenied:
             return {"ok": False, "error": "Cannot verify process owner; refusing to terminate it."}
-        if owner.split("\\\\")[-1].casefold() != getpass.getuser().casefold():
+        if owner.rsplit("\\", 1)[-1].casefold() != getpass.getuser().casefold():
             return {"ok": False, "error": "MyAgent can only terminate processes owned by the current user."}
         process.terminate()
         try:
