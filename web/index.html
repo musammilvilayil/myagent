@@ -23,7 +23,7 @@ button{background:var(--accent);color:#06202a;border:0;border-radius:10px;paddin
 <section class="panel">
 <h2>Talk to MyAgent</h2>
 <textarea id="message" placeholder="Try: Check my PC health, list files in the workspace, or check my Node.js version."></textarea>
-<div class="actions"><button id="send">Send</button><button class="secondary" id="refresh">Refresh tools</button><button class="secondary" id="capture">Capture screen</button></div><div id="screenPreview" style="display:none;margin-top:14px"><img id="screenImage" alt="Current PC screen preview" style="display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px"><small class="muted">Screen preview is shown only in this local dashboard.</small></div>
+<div class="actions"><button id="send">Send</button><button class="secondary" id="refresh">Refresh tools</button><button class="secondary" id="capture">Capture screen</button><button class="secondary" id="voice">Start voice</button><label class="muted" style="display:flex;align-items:center;gap:6px"><input id="speak" type="checkbox"> Speak replies</label></div><div id="screenPreview" style="display:none;margin-top:14px"><img id="screenImage" alt="Current PC screen preview" style="display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:12px"><small class="muted">Screen preview is shown only in this local dashboard.</small></div>
 <div class="output" id="reply" aria-live="polite">Starting local agent…</div>
 <div id="approval"></div>
 </section>
@@ -33,9 +33,9 @@ button{background:var(--accent);color:#06202a;border:0;border-radius:10px;paddin
 </main>
 <script>
 const $=id=>document.getElementById(id);
-let busy=false;
+let busy=false;\nlet mediaRecorder=null;\nlet mediaStream=null;\nlet audioChunks=[];
 function setBusy(value){busy=value;$('send').disabled=value;$('send').textContent=value?'Working…':'Send'}
-function showApproval(action){
+function speakReply(text){if(!$('speak').checked||!('speechSynthesis' in window)||!text)return;speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(text))}\nfunction handleAgentData(data){$('reply').textContent=data.reply||JSON.stringify(data,null,2);if(data.status==='approval_required')showApproval(data);speakReply(data.reply||'')}\nfunction showApproval(action){
  $('approval').replaceChildren();
  const p=action.pending_action;if(!p)return;
  const card=document.createElement('div');card.className='approval';
@@ -65,11 +65,30 @@ async function load(){
 }
 $('send').onclick=async()=>{
  const message=$('message').value.trim();if(!message||busy)return;setBusy(true);$('approval').replaceChildren();$('reply').textContent='MyAgent is planning…';
- try{const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message})});const data=await response.json();$('reply').textContent=data.reply||JSON.stringify(data,null,2);if(data.status==='approval_required')showApproval(data)}
+ try{const response=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message})});const data=await response.json();handleAgentData(data)}
  catch(error){$('reply').textContent='Request failed: '+error.message}
  finally{setBusy(false)}
 };
 $('message').addEventListener('keydown',event=>{if((event.ctrlKey||event.metaKey)&&event.key==='Enter')$('send').click()});
+$('voice').onclick=async()=>{
+ const button=$('voice');
+ if(mediaRecorder&&mediaRecorder.state==='recording'){button.disabled=true;mediaRecorder.stop();button.textContent='Transcribing…';return}
+ try{
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder)throw Error('This browser does not support microphone recording.');
+  mediaStream=await navigator.mediaDevices.getUserMedia({audio:true});audioChunks=[];
+  mediaRecorder=new MediaRecorder(mediaStream);
+  mediaRecorder.ondataavailable=event=>{if(event.data.size)audioChunks.push(event.data)};
+  mediaRecorder.onstop=async()=>{
+   try{const blob=new Blob(audioChunks,{type:mediaRecorder.mimeType||'audio/webm'});const form=new FormData();form.append('file',blob,'voice.webm');$('reply').textContent='Transcribing with local Whisper…';
+    const response=await fetch('/api/voice/transcribe',{method:'POST',body:form});const data=await response.json();if(!response.ok)throw Error(data.detail||'Voice request failed');
+    const transcript=data.transcription?.text||'';if(transcript)$('reply').textContent='You said: '+transcript+'\\n\\n'+(data.reply||'');
+    if(data.status==='approval_required')showApproval(data);speakReply(data.reply||'');
+   }catch(error){$('reply').textContent='Voice request failed: '+error.message}
+   finally{mediaStream?.getTracks().forEach(track=>track.stop());mediaStream=null;mediaRecorder=null;button.disabled=false;button.textContent='Start voice'}
+  };
+  mediaRecorder.start();button.textContent='Stop recording';
+ }catch(error){$('reply').textContent='Microphone error: '+error.message;button.textContent='Start voice'}
+};
 $('capture').onclick=async()=>{const button=$('capture');button.disabled=true;button.textContent='Capturing…';try{const response=await fetch('/api/screen',{cache:'no-store'});if(!response.ok){const error=await response.json();throw Error(error.detail||'Screen capture unavailable')}const blob=await response.blob();const old=$('screenImage').dataset.objectUrl;if(old)URL.revokeObjectURL(old);const objectUrl=URL.createObjectURL(blob);$('screenImage').src=objectUrl;$('screenImage').dataset.objectUrl=objectUrl;$('screenPreview').style.display='block'}catch(error){$('reply').textContent='Screen capture failed: '+error.message}finally{button.disabled=false;button.textContent='Capture screen'}};
 $('refresh').onclick=load;load();
 </script></body></html>
