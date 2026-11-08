@@ -40,6 +40,11 @@ def open_application(app: str) -> dict[str, Any]:
 
 
 def register_desktop_tools(registry: ToolRegistry) -> None:
-    registry.register(ToolSpec("system_info", "Read basic PC health and platform information.", RiskLevel.READ, system_info))
-    registry.register(ToolSpec("open_url", "Open a validated HTTP or HTTPS URL in the default browser.", RiskLevel.LOW, open_url))
-    registry.register(ToolSpec("open_application", "Launch an application from the built-in allowlist.", RiskLevel.LOW, open_application))
+    registry.register(ToolSpec("system_info", "Read basic PC health and platform information.", RiskLevel.READ, system_info,
+        {"type": "object", "properties": {}, "additionalProperties": False}))
+    registry.register(ToolSpec("open_url", "Open a validated HTTP or HTTPS URL in the default browser.", RiskLevel.LOW, open_url,
+        {"type": "object", "properties": {"url": {"type": "string", "description": "A complete http or https URL"}},
+         "required": ["url"], "additionalProperties": False}))
+    registry.register(ToolSpec("open_application", "Launch an application from the built-in allowlist.", RiskLevel.LOW, open_application,
+        {"type": "object", "properties": {"app": {"type": "string", "enum": ["notepad", "calculator", "explorer", "vscode", "terminal"]}},
+         "required": ["app"], "additionalProperties": False}))
