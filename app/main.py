@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 from app.agent.runtime import AgentRuntime
 from app.config import settings
-from app.tools.browser import register_browser_tools
+from app.tools.browser import close_browser_session, register_browser_tools
 from app.tools.desktop import register_desktop_tools
 from app.tools.desktop_automation import register_desktop_automation_tools, _pyautogui
 from app.tools.registry import ToolRegistry
@@ -30,6 +30,11 @@ class ToolRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=12000)
+
+
+@app.on_event("shutdown")
+def shutdown_browser():
+    close_browser_session()
 
 
 @app.get("/api/health")
