@@ -13,11 +13,14 @@
 - [x] Approval-gated mouse click, text typing and restricted key press
 - [x] Playwright browser navigation, page reading, exact-text click and labelled form fill
 - [x] Playwright shutdown cleanup
+- [x] Optional local Whisper speech-to-text endpoint and dashboard microphone capture
+- [x] Optional browser speech synthesis for spoken replies
 - [x] Windows setup/run scripts and GitHub Actions CI
 
 ## Remaining engineering work
 - [ ] File restore/undo and recoverable delete
 - [ ] OCR fallback when provider has no vision support
+- [ ] Persistent chat sessions and searchable conversation memory
 - [ ] Browser download/upload handling with user confirmation
 - [ ] Browser session UI and tab management
 - [ ] App discovery and window focus controls
