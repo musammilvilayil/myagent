@@ -7,11 +7,15 @@ from app.agent.runtime import AgentRuntime
 from app.config import settings
 from app.tools.desktop import register_desktop_tools
 from app.tools.registry import ToolRegistry
+from app.tools.system import register_system_tools
+from app.tools.workspace import register_workspace_tools
 
 registry = ToolRegistry()
 register_desktop_tools(registry)
+register_system_tools(registry)
+register_workspace_tools(registry)
 runtime = AgentRuntime(registry)
-app = FastAPI(title=settings.app_name, version="0.2.0")
+app = FastAPI(title=settings.app_name, version="0.3.0")
 
 
 class ToolRequest(BaseModel):
@@ -26,7 +30,7 @@ class ChatRequest(BaseModel):
 
 @app.get("/api/health")
 async def health():
-    return {"ok": True, "app": settings.app_name, "version": "0.2.0"}
+    return {"ok": True, "app": settings.app_name, "version": "0.3.0"}
 
 
 @app.get("/api/tools")
@@ -40,6 +44,22 @@ async def execute_tool(request: ToolRequest):
         return runtime.run_tool(request.name, request.arguments, request.approval_token)
     except KeyError:
         raise HTTPException(status_code=404, detail="Unknown tool")
+
+
+@app.post("/api/approvals/{token}/approve")
+async def approve_action(token: str):
+    result = runtime.approve(token)
+    if result.get("status") == "failed":
+        raise HTTPException(status_code=404, detail=result.get("error", "Approval not found"))
+    return result
+
+
+@app.post("/api/approvals/{token}/deny")
+async def deny_action(token: str):
+    result = runtime.deny(token)
+    if result.get("status") == "failed":
+        raise HTTPException(status_code=404, detail=result.get("error", "Approval not found"))
+    return result
 
 
 @app.post("/api/chat")
