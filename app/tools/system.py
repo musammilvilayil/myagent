@@ -4,6 +4,7 @@ import platform
 import subprocess
 from typing import Any
 import psutil
+import getpass
 from app.security import RiskLevel
 from app.tools.registry import ToolRegistry, ToolSpec
 from app.tools.workspace import workspace_root
@@ -33,6 +34,34 @@ def list_processes(limit: int = 40) -> dict[str, Any]:
     return {"ok": True, "processes": processes[:max(1, min(limit, 100))]}
 
 
+def terminate_process(pid: int) -> dict[str, Any]:
+    if pid <= 0 or pid == os.getpid():
+        return {"ok": False, "error": "This process cannot be terminated by MyAgent."}
+    try:
+        process = psutil.Process(pid)
+        name = (process.name() or "").lower()
+        protected = {"system", "system idle process", "csrss.exe", "wininit.exe", "winlogon.exe",
+                     "services.exe", "lsass.exe", "smss.exe", "explorer.exe", "dwm.exe"}
+        if name in protected:
+            return {"ok": False, "error": "This process is protected from termination."}
+        try:
+            owner = process.username()
+        except psutil.AccessDenied:
+            return {"ok": False, "error": "Cannot verify process owner; refusing to terminate it."}
+        if owner.split("\\\\")[-1].casefold() != getpass.getuser().casefold():
+            return {"ok": False, "error": "MyAgent can only terminate processes owned by the current user."}
+        process.terminate()
+        try:
+            process.wait(timeout=3)
+            return {"ok": True, "pid": pid, "name": name, "terminated": True}
+        except psutil.TimeoutExpired:
+            return {"ok": False, "pid": pid, "name": name, "error": "Process did not exit within 3 seconds; it was not force-killed."}
+    except psutil.NoSuchProcess:
+        return {"ok": False, "error": "Process no longer exists."}
+    except psutil.AccessDenied:
+        return {"ok": False, "error": "Operating system denied access to this process."}
+
+
 def safe_command(command: str) -> dict[str, Any]:
     commands = {"python_version": ["python", "--version"], "node_version": ["node", "--version"],
                 "npm_version": ["npm", "--version"], "git_version": ["git", "--version"],
@@ -55,6 +84,9 @@ def register_system_tools(registry: ToolRegistry) -> None:
     registry.register(ToolSpec("process_list", "List running processes and resource usage. Does not terminate processes.", RiskLevel.READ, list_processes,
         {"type": "object", "properties": {"limit": {"type": "integer", "minimum": 1, "maximum": 100}},
          "additionalProperties": False}))
+    registry.register(ToolSpec("process_terminate", "Terminate a process owned by the current user after explicit approval. Protected system processes are blocked.", RiskLevel.DESTRUCTIVE, terminate_process,
+        {"type": "object", "properties": {"pid": {"type": "integer", "minimum": 2}},
+         "required": ["pid"], "additionalProperties": False}))
     registry.register(ToolSpec("safe_command", "Run one fixed diagnostic command; arbitrary shell commands and arguments are not accepted.", RiskLevel.READ, safe_command,
         {"type": "object", "properties": {"command": {"type": "string", "enum": ["python_version", "node_version", "npm_version", "git_version", "git_status", "whoami"]}},
          "required": ["command"], "additionalProperties": False}))
