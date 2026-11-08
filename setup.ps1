@@ -16,6 +16,10 @@ if ($LASTEXITCODE -ne 0) { throw "pip upgrade failed." }
 & $python -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { throw "Core dependency installation failed." }
 
+Write-Host "Installing optional local voice recognition dependencies..." -ForegroundColor Cyan
+& $python -m pip install -r requirements-voice.txt
+if ($LASTEXITCODE -ne 0) { throw "Voice dependency installation failed." }
+
 Write-Host "Installing optional desktop and browser dependencies..." -ForegroundColor Cyan
 & $python -m pip install -r requirements-desktop.txt
 if ($LASTEXITCODE -ne 0) { throw "Desktop dependency installation failed." }
