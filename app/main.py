@@ -1,4 +1,5 @@
 from __future__ import annotations
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
