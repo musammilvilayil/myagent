@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     model_name: str = ""
     model_timeout_seconds: int = 60
     workspace_root: str = "./workspace"
+    whisper_model: str = "base"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
