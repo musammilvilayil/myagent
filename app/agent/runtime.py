@@ -34,7 +34,14 @@ class AgentRuntime:
         if not pending:
             return {"status": "failed", "error": "Approval not found or already used."}
         name, arguments = pending
-        return self.run_tool(name, arguments, approval_token=token)
+        if not self.approvals.consume(token, name):
+            return {"status": "failed", "error": "Approval expired or has already been used."}
+        try:
+            result = self.tools.execute(name, arguments)
+            return {"status": "completed" if result.get("ok") else "unverified_or_failed",
+                    "tool": name, "result": result}
+        except Exception as exc:
+            return {"status": "failed", "tool": name, "error": str(exc)}
 
     def deny(self, token: str) -> dict[str, Any]:
         pending = self.pending.pop(token, None)
