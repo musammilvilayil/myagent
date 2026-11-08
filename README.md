@@ -11,6 +11,8 @@ A local-first AI assistant being developed to operate your Windows PC through na
 - Workspace file listing, reading and text search
 - Workspace file creation/replacement with explicit approval and automatic backups
 - Screen capture with vision handoff to a vision-capable model provider
+- Local Whisper speech-to-text from the dashboard microphone
+- Browser speech synthesis for optional spoken replies
 - Approval-gated mouse clicks, typing and a restricted navigation-key set
 - Isolated Playwright Chromium session: navigate, read page text, click exact text and fill labelled fields (click/fill require approval)
 - Allowlisted app launching and validated HTTP(S) URL opening
@@ -38,7 +40,7 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 ## Model provider
-Set MODEL_BASE_URL, MODEL_API_KEY and MODEL_NAME in .env. The provider must support OpenAI-compatible chat completions and function/tool calling. Screen understanding also requires image/vision input support. Do not commit .env.
+Set MODEL_BASE_URL, MODEL_API_KEY and MODEL_NAME in .env. The provider must support OpenAI-compatible chat completions and function/tool calling. Screen understanding also requires image/vision input support. Voice transcription uses the local Whisper base model and downloads model weights on first use; set WHISPER_MODEL in .env to choose another supported size. Browser speech synthesis uses the operating system voice. Do not commit .env.
 
 ## Workspace boundary
 By default, file tools operate only in ./workspace. Set WORKSPACE_ROOT in .env to a dedicated project folder you want MyAgent to manage. Do not point it at your entire user profile or a folder containing secrets.
