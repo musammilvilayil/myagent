@@ -80,3 +80,15 @@ def register_browser_tools(registry: ToolRegistry) -> None:
     registry.register(ToolSpec("browser_fill", "Fill a labelled form field without submitting the form. Requires approval.", RiskLevel.SENSITIVE, browser_fill,
         {"type": "object", "properties": {"label": {"type": "string", "maxLength": 120}, "value": {"type": "string", "maxLength": 2000}},
          "required": ["label", "value"], "additionalProperties": False})
+
+
+def close_browser_session() -> None:
+    global _playwright, _browser, _page
+    with _lock:
+        if _browser is not None:
+            _browser.close()
+        if _playwright is not None:
+            _playwright.stop()
+        _playwright = None
+        _browser = None
+        _page = None
